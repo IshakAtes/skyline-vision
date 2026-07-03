@@ -10,8 +10,10 @@ Diese Anleitung beschreibt das produktive Deployment von Grenady auf einem VPS. 
 - Deployment-Ordner: `/opt/grenady`
 - Compose-Datei auf dem VPS: `/opt/grenady/docker-compose.yml`
 - Runtime-Env auf dem VPS: `/opt/grenady/.env`
-- Port-Binding: `127.0.0.1:3000:3000`
-- Nginx leitet extern auf `http://127.0.0.1:3000`
+- Oeffentlicher Zugriff: Traefik routet `grenady.de` und `www.grenady.de`
+- Interner App-Port: `3000`
+- Gemeinsames Docker-Netzwerk: `traefik-proxy`
+- Kein direktes Host-Port-Binding fuer Grenady
 
 ## GitHub Actions Ablauf
 
@@ -100,7 +102,7 @@ Docker und Compose-Plugin installieren:
 
 ```bash
 sudo apt update
-sudo apt install -y ca-certificates curl gnupg nginx certbot python3-certbot-nginx
+sudo apt install -y ca-certificates curl gnupg
 sudo install -m 0755 -d /etc/apt/keyrings
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
@@ -134,45 +136,26 @@ Falls das GHCR-Package privat ist, einmalig auf dem VPS einloggen:
 echo "<GHCR_PAT>" | docker login ghcr.io -u "<github-user>" --password-stdin
 ```
 
-## Nginx Reverse Proxy
+## Traefik Reverse Proxy
 
-Beispielkonfiguration:
+Grenady wird nicht direkt auf Port 80, 443 oder 3000 am Host veroeffentlicht. Traefik laeuft als separates Hostinger Docker Manager Projekt und routet anhand der Docker Labels in `docker-compose.yml`.
 
-```nginx
-server {
-    listen 80;
-    listen [::]:80;
-
-    server_name grenady.de www.grenady.de;
-
-    client_max_body_size 2m;
-
-    location / {
-        proxy_pass http://127.0.0.1:3000;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-Aktivieren:
+Vor dem Grenady-Deploy pruefen:
 
 ```bash
-sudo nano /etc/nginx/sites-available/grenady.conf
-sudo ln -s /etc/nginx/sites-available/grenady.conf /etc/nginx/sites-enabled/grenady.conf
-sudo nginx -t
-sudo systemctl reload nginx
+docker ps
+docker network ls
+sudo ss -tulpn | grep -E ':80|:443' || true
 ```
 
-HTTPS:
+Erwartung:
 
-```bash
-sudo certbot --nginx -d grenady.de -d www.grenady.de
-sudo certbot renew --dry-run
-```
+- Ein Traefik-Container laeuft.
+- Traefik belegt Port 80 und 443.
+- Das externe Netzwerk `traefik-proxy` existiert.
+- Der Traefik-Container haengt ebenfalls im Netzwerk `traefik-proxy`.
+
+Falls `traefik-proxy` fehlt, muss das gemeinsame Netzwerk im Traefik-Projekt angelegt bzw. verbunden werden, bevor Grenady deployed wird. Grenady verwendet dieses Netzwerk als externes Compose-Netzwerk.
 
 ## Docker Compose pruefen
 
@@ -200,9 +183,9 @@ docker compose up -d
 ```bash
 docker ps
 docker logs grenady-app
-curl -I http://127.0.0.1:3000
-sudo nginx -t
-sudo systemctl reload nginx
+docker exec grenady-app node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/healthz').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
+docker network inspect traefik-proxy
+sudo ss -tulpn | grep -E ':80|:443' || true
 ```
 
 Wenn keine E-Mail ankommt:
