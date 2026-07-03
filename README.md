@@ -66,8 +66,7 @@ Internal container port: `3000`
 ## Deployment
 
 Full VPS deployment instructions are in [docs/vps-deployment.md](docs/vps-deployment.md).
-
-Nginx example config is in [deploy/nginx/grenady.conf.example](deploy/nginx/grenady.conf.example).
+Production traffic is routed through the shared Hostinger Traefik proxy.
 
 ## Required Runtime ENV
 
