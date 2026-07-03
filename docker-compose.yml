@@ -10,5 +10,15 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
-    ports:
-      - "127.0.0.1:3000:3000"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grenady.rule=Host(`grenady.de`) || Host(`www.grenady.de`)"
+      - "traefik.http.routers.grenady.entrypoints=websecure"
+      - "traefik.http.routers.grenady.tls.certresolver=letsencrypt"
+      - "traefik.http.services.grenady.loadbalancer.server.port=3000"
+    networks:
+      - traefik-proxy
+
+networks:
+  traefik-proxy:
+    external: true
