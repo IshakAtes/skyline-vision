@@ -210,13 +210,18 @@ jobs:
           fi
 
           if ! docker network inspect traefik-proxy >/dev/null 2>&1; then
-            echo "Docker network 'traefik-proxy' does not exist. Create/connect the shared Traefik network before deploying Grenady." >&2
-            exit 1
+            echo "Docker network 'traefik-proxy' does not exist. Creating it now."
+            docker network create traefik-proxy
           fi
 
-          if ! docker inspect -f '{{ range $name, $_ := .NetworkSettings.Networks }}{{ println $name }}{{ end }}' "$TRAEFIK_CONTAINER" | grep -qx 'traefik-proxy'; then
-            echo "Traefik container '$TRAEFIK_CONTAINER' is not connected to the 'traefik-proxy' network." >&2
-            exit 1
+          TRAEFIK_NETWORK_MODE="$(docker inspect -f '{{.HostConfig.NetworkMode}}' "$TRAEFIK_CONTAINER")"
+          echo "Traefik network mode: $TRAEFIK_NETWORK_MODE"
+
+          if [ "$TRAEFIK_NETWORK_MODE" = "host" ]; then
+            echo "Traefik uses host network mode; skipping docker network connect."
+          elif ! docker inspect -f '{{ range $name, $_ := .NetworkSettings.Networks }}{{ println $name }}{{ end }}' "$TRAEFIK_CONTAINER" | grep -qx 'traefik-proxy'; then
+            echo "Connecting Traefik container '$TRAEFIK_CONTAINER' to 'traefik-proxy'."
+            docker network connect traefik-proxy "$TRAEFIK_CONTAINER"
           fi
 
           docker compose pull
@@ -236,4 +241,12 @@ jobs:
           docker compose ps
           sleep 5
           docker exec "$CONTAINER_NAME" node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/healthz').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
+
+          docker ps
+          docker network inspect traefik-proxy
+          docker logs "$CONTAINER_NAME" --tail=100
+          docker logs "$TRAEFIK_CONTAINER" --tail=100
+          if ! ss -tln | grep -E ':80|:443'; then
+            echo "Warning: ss did not show listeners on port 80 or 443."
+          fi
           REMOTE_SCRIPT

@@ -145,7 +145,8 @@ Vor dem Grenady-Deploy pruefen:
 ```bash
 docker ps
 docker network ls
-sudo ss -tulpn | grep -E ':80|:443' || true
+docker inspect <traefik-container> --format '{{.HostConfig.NetworkMode}}'
+ss -tln | grep -E ':80|:443' || true
 ```
 
 Erwartung:
@@ -153,9 +154,10 @@ Erwartung:
 - Ein Traefik-Container laeuft.
 - Traefik belegt Port 80 und 443.
 - Das externe Netzwerk `traefik-proxy` existiert.
-- Der Traefik-Container haengt ebenfalls im Netzwerk `traefik-proxy`.
+- Wenn Traefik im `host` NetworkMode laeuft, wird er nicht mit `traefik-proxy` verbunden.
+- Wenn Traefik nicht im `host` NetworkMode laeuft, haengt der Traefik-Container ebenfalls im Netzwerk `traefik-proxy`.
 
-Falls `traefik-proxy` fehlt, muss das gemeinsame Netzwerk im Traefik-Projekt angelegt bzw. verbunden werden, bevor Grenady deployed wird. Grenady verwendet dieses Netzwerk als externes Compose-Netzwerk.
+Falls `traefik-proxy` fehlt, legt der Deploy-Workflow das gemeinsame Netzwerk an. Grenady verwendet dieses Netzwerk als externes Compose-Netzwerk.
 
 ## Docker Compose pruefen
 
@@ -185,7 +187,7 @@ docker ps
 docker logs grenady-app
 docker exec grenady-app node -e "fetch('http://127.0.0.1:' + (process.env.PORT || 3000) + '/healthz').then((res) => process.exit(res.ok ? 0 : 1)).catch(() => process.exit(1))"
 docker network inspect traefik-proxy
-sudo ss -tulpn | grep -E ':80|:443' || true
+ss -tln | grep -E ':80|:443' || true
 ```
 
 Wenn keine E-Mail ankommt:
