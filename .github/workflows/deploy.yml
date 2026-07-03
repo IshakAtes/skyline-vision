@@ -115,10 +115,35 @@ jobs:
           : "${VPS_SSH_KEY:?VPS_SSH_KEY secret is required}"
           : "${VPS_PORT:?VPS_PORT secret is required}"
 
+          VPS_HOST="$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')"
+          VPS_PORT="$(printf '%s' "$VPS_PORT" | tr -d '[:space:]')"
+
+          if ! [[ "$VPS_PORT" =~ ^[0-9]+$ ]]; then
+            echo "VPS_PORT must contain only digits." >&2
+            exit 1
+          fi
+
           install -m 700 -d ~/.ssh
           printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/grenady_vps_key
           chmod 600 ~/.ssh/grenady_vps_key
-          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          scan_output="$RUNNER_TEMP/grenady_known_hosts"
+          scan_error="$RUNNER_TEMP/grenady_ssh_keyscan.err"
+          for attempt in 1 2 3; do
+            if ssh-keyscan -T 15 -p "$VPS_PORT" "$VPS_HOST" > "$scan_output" 2> "$scan_error" && [ -s "$scan_output" ]; then
+              cat "$scan_output" >> ~/.ssh/known_hosts
+              break
+            fi
+
+            echo "ssh-keyscan attempt $attempt failed for VPS SSH port $VPS_PORT." >&2
+            cat "$scan_error" >&2 || true
+            sleep 5
+          done
+
+          if [ ! -s "$scan_output" ]; then
+            echo "Could not read the VPS SSH host key. Check VPS_HOST, VPS_PORT, and whether SSH is reachable from GitHub Actions." >&2
+            exit 1
+          fi
 
       - name: Prepare deploy directory on VPS
         env:
@@ -132,6 +157,9 @@ jobs:
           : "${VPS_HOST:?VPS_HOST secret is required}"
           : "${VPS_USER:?VPS_USER secret is required}"
           : "${VPS_PORT:?VPS_PORT secret is required}"
+
+          VPS_HOST="$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')"
+          VPS_PORT="$(printf '%s' "$VPS_PORT" | tr -d '[:space:]')"
 
           ssh -i ~/.ssh/grenady_vps_key -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             "DEPLOY_PATH='$DEPLOY_PATH' bash -s" <<'REMOTE_SCRIPT'
@@ -161,6 +189,9 @@ jobs:
           : "${VPS_USER:?VPS_USER secret is required}"
           : "${VPS_PORT:?VPS_PORT secret is required}"
 
+          VPS_HOST="$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')"
+          VPS_PORT="$(printf '%s' "$VPS_PORT" | tr -d '[:space:]')"
+
           scp -i ~/.ssh/grenady_vps_key -P "$VPS_PORT" \
             docker-compose.yml \
             "$VPS_USER@$VPS_HOST:$DEPLOY_PATH/docker-compose.yml"
@@ -179,6 +210,9 @@ jobs:
           : "${VPS_HOST:?VPS_HOST secret is required}"
           : "${VPS_USER:?VPS_USER secret is required}"
           : "${VPS_PORT:?VPS_PORT secret is required}"
+
+          VPS_HOST="$(printf '%s' "$VPS_HOST" | tr -d '[:space:]')"
+          VPS_PORT="$(printf '%s' "$VPS_PORT" | tr -d '[:space:]')"
 
           GHCR_PAT_B64="$(printf '%s' "${GHCR_PAT:-}" | base64 -w0)"
 
