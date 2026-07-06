@@ -6,7 +6,6 @@ import {
   Bot,
   Check,
   CheckCircle2,
-  Code2,
   ExternalLink,
   LayoutTemplate,
   Link2,
@@ -14,48 +13,25 @@ import {
   Megaphone,
   MessageCircle,
   Monitor,
-  Palette,
-  Search,
   ShoppingBag,
-  Sparkles,
-  Wrench,
   X,
 } from 'lucide-react';
 import { getWhatsappUrl } from './config/whatsapp';
 
 const projectOptions = [
-  { id: 'website', title: 'Website erstellen', desc: 'Neue Website, Landingpage oder Webdesign-Projekt', icon: LayoutTemplate },
-  { id: 'relaunch', title: 'Website Relaunch', desc: 'Bestehenden Auftritt technisch und visuell verbessern', icon: Sparkles },
-  { id: 'shop', title: 'Onlineshop', desc: 'Shopify, Shopware, Relaunch oder Optimierung', icon: ShoppingBag },
-  { id: 'seo', title: 'SEO / SEA / GEO', desc: 'Mehr Nachfrage über Suche, Ads und AI Search', icon: Search },
-  { id: 'branding', title: 'Logo & Branding', desc: 'Markenauftritt, Designsystem und Copywriting', icon: Palette },
-  { id: 'marketing', title: 'Digitales Marketing', desc: 'Social Media, E-Mail und Kampagnen', icon: Megaphone },
-  { id: 'ai-automation', title: 'KI-Automatisierung', desc: 'n8n-Workflows, KI-Agenten und Prozessautomation', icon: Bot },
-  { id: 'ai-assistant', title: 'Chatbot & KI-Assistent', desc: 'Eigener privater Clawbot, Chatbot oder Jarvis-Assistent', icon: MessageCircle },
-  { id: 'software', title: 'Software & APIs', desc: 'Apps, interne Tools, Schnittstellen und Symfony APIs', icon: Code2 },
-  { id: 'retainer', title: 'Retainer & Wartung', desc: 'Laufende Betreuung und Weiterentwicklung', icon: Wrench },
-];
-
-const signOptions = [
-  { id: 'led', title: 'LED-Schrift & Leuchtreklame', desc: 'Design, Produktion und Montage am Standort', icon: Monitor },
-  { id: 'company-sign', title: 'Firmen- & Fassadenschild', desc: 'Hochwertiges Schild passend zum Markenauftritt', icon: LayoutTemplate },
-  { id: 'sign-consulting', title: 'Beratung zur Schildart', desc: 'Physische Sichtbarkeit gewünscht, Ausführung noch offen', icon: MessageCircle },
-];
-
-const packageOptions = [
-  { id: 'landingpage', title: 'Landingpage / Onepager', desc: 'Kompakter Auftritt für ein klares Angebot' },
-  { id: 'business', title: 'Business Website', desc: 'Mehrseitige Website für Unternehmen' },
-  { id: 'shop', title: 'Onlineshop', desc: 'Shopify oder Shopware' },
-  { id: 'custom', title: 'Individuelle Plattform', desc: 'Besondere Funktionen oder Systemanbindungen' },
-  { id: 'unsure', title: 'Noch offen', desc: 'Wir empfehlen das passende Paket' },
+  { id: 'website', title: 'Webseiten & Landingpages', desc: 'Moderne Webseiten, Onepager, Landingpages und Unternehmenswebseiten.', icon: LayoutTemplate },
+  { id: 'business_app_shop', title: 'Business-Apps & Onlineshops', desc: 'Webanwendungen, Kundenportale, Buchungssysteme und Onlineshops.', icon: ShoppingBag },
+  { id: 'digital_marketing', title: 'Digitales Marketing', desc: 'SEO, GEO, Social-Media-Marketing, Sichtbarkeit und digitale Kundengewinnung.', icon: Megaphone },
+  { id: 'ai_automation', title: 'KI-Automatisierung', desc: 'n8n-Workflows, KI-Assistenten, KI-Agents und Prozessautomation.', icon: Bot },
+  { id: 'signage', title: 'Firmen- & Fassadenschilder', desc: 'Firmenschilder, Fassadenschilder, Leuchtreklame und Außenwerbung.', icon: Monitor },
 ];
 
 const budgetOptions = [
-  { id: 'under-3000', title: 'Bis 3.000 EUR', desc: 'Kompakter Einstieg' },
-  { id: '3000-7000', title: '3.000 - 7.000 EUR', desc: 'Professioneller Auftritt' },
-  { id: '7000-15000', title: '7.000 - 15.000 EUR', desc: 'Umfangreiches Projekt' },
-  { id: '15000-plus', title: 'Über 15.000 EUR', desc: 'Individuelles System' },
-  { id: 'unsure', title: 'Noch offen', desc: 'Gemeinsam einordnen' },
+  { id: 'compact', title: 'Kompakter Einstieg', desc: 'Schlanker Umfang mit klar priorisierten Zielen' },
+  { id: 'professional', title: 'Professionelles Projekt', desc: 'Solider Ausbau mit Strategie, Design und Umsetzung' },
+  { id: 'growth', title: 'Wachstum & Skalierung', desc: 'Mehrere Bausteine oder laufende Weiterentwicklung' },
+  { id: 'custom', title: 'Individuelle Lösung', desc: 'Komplexere Anforderungen oder besondere Funktionen' },
+  { id: 'unsure', title: 'Noch offen', desc: 'Wir ordnen den passenden Rahmen gemeinsam ein' },
 ];
 
 const timelineOptions = [
@@ -69,7 +45,6 @@ const inquiryEndpoint = import.meta.env.VITE_INQUIRY_API_URL || '/api/send-inqui
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const getLabel = (options, value, fallback = 'Noch offen') => options.find((option) => option.id === value)?.title || fallback;
-const getLabels = (options, values) => values.map((value) => getLabel(options, value)).join(', ');
 
 function OptionCard({ option, selected, multiple, onSelect }) {
   const Icon = option.icon;
@@ -115,6 +90,7 @@ function Configurator({ onClose }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formError, setFormError] = useState('');
   const [formData, setFormData] = useState({
+    projectType: '',
     projectTypes: [],
     signType: '',
     websitePackage: '',
@@ -130,19 +106,20 @@ function Configurator({ onClose }) {
   });
 
   const hasValidContactData = Boolean(formData.name.trim() && emailRegex.test(formData.email.trim()) && formData.phone.trim());
-  const canProceed = step === 1 ? formData.projectTypes.length > 0 : step === 3 ? hasValidContactData : true;
-  const needsWebsitePackage = formData.projectTypes.some((value) => ['website', 'relaunch', 'shop'].includes(value));
+  const canProceed = step === 1 ? Boolean(formData.projectType) : step === 3 ? hasValidContactData : true;
   const select = (name, value) => {
     setFormError('');
     setFormData((current) => ({ ...current, [name]: value }));
   };
-  const toggleProjectType = (value) => setFormData((current) => {
+  const selectProjectType = (value) => setFormData((current) => {
     setFormError('');
-    const projectTypes = current.projectTypes.includes(value)
-      ? current.projectTypes.filter((item) => item !== value)
-      : [...current.projectTypes, value];
-    const includesWebsiteProject = projectTypes.some((item) => ['website', 'relaunch', 'shop'].includes(item));
-    return { ...current, projectTypes, websitePackage: includesWebsiteProject ? current.websitePackage : '' };
+    return {
+      ...current,
+      projectType: value,
+      projectTypes: value ? [value] : [],
+      signType: '',
+      websitePackage: '',
+    };
   });
   const change = (event) => {
     setFormError('');
@@ -152,7 +129,7 @@ function Configurator({ onClose }) {
     if (!formData.name.trim()) return 'Bitte geben Sie Ihren Namen ein.';
     if (!emailRegex.test(formData.email.trim())) return 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
     if (!formData.phone.trim()) return 'Bitte geben Sie eine Telefonnummer ein.';
-    if (!formData.projectTypes.length) return 'Bitte wählen Sie mindestens eine Projektart aus.';
+    if (!formData.projectType) return 'Bitte wählen Sie einen Hauptbereich aus.';
     return '';
   };
   const buildInquiryPayload = () => ({
@@ -236,8 +213,8 @@ function Configurator({ onClose }) {
               </ol>
               <div className="config-selection">
                 <small>Aktuelle Auswahl</small>
-                <strong>{formData.projectTypes.length ? `${formData.projectTypes.length} Projektarten ausgewählt` : 'Noch keine Leistung gewählt'}</strong>
-                <p>Je genauer Ihre Angaben, desto konkreter können wir antworten.</p>
+                <strong>{formData.projectType ? getLabel(projectOptions, formData.projectType) : 'Noch kein Bereich gewählt'}</strong>
+                <p>Beschreiben Sie Ihr Vorhaben kurz. Wir prüfen es individuell und melden uns mit einem passenden Angebot.</p>
               </div>
             </aside>
 
@@ -247,11 +224,9 @@ function Configurator({ onClose }) {
                   {step === 1 && (
                     <>
                       <span className="config-kicker">Schritt 1 von 4</span>
-                      <h2>Was dürfen wir für Sie entwickeln?</h2>
-                      <p className="config-intro">Mehrfachauswahl ist möglich. Wählen Sie alles, was für Ihr Projekt relevant ist.</p>
-                      <OptionGroup label="Projektarten (Mehrfachauswahl)" options={projectOptions} value={formData.projectTypes} multiple onSelect={toggleProjectType} />
-                      <OptionGroup label="Physische Sichtbarkeit" options={signOptions} value={formData.signType} allowEmpty onSelect={(value) => select('signType', value)} />
-                      {needsWebsitePackage && <OptionGroup label="Website-Paket (optional)" options={packageOptions} value={formData.websitePackage} allowEmpty onSelect={(value) => select('websitePackage', value)} />}
+                      <h2>Wobei dürfen wir Sie unterstützen?</h2>
+                      <p className="config-intro">Wählen Sie zuerst den Hauptbereich aus. Details klären wir danach über Ihre Angaben und die persönliche Beratung.</p>
+                      <OptionGroup label="Hauptbereich" options={projectOptions} value={formData.projectType} onSelect={selectProjectType} />
                     </>
                   )}
 
@@ -259,11 +234,11 @@ function Configurator({ onClose }) {
                     <>
                       <span className="config-kicker">Schritt 2 von 4</span>
                       <h2>Budget, Zeitraum & Inspiration</h2>
-                      <p className="config-intro">Damit wir Umfang und nächsten Schritt realistisch einschätzen können.</p>
-                      <OptionGroup label="Budgetrahmen" options={budgetOptions} value={formData.budget} onSelect={(value) => select('budget', value)} />
+                      <p className="config-intro">Beschreiben Sie kurz Ihr Vorhaben. Wir prüfen die Anfrage individuell und erstellen danach ein persönliches Angebot.</p>
+                      <OptionGroup label="Budgetorientierung" options={budgetOptions} value={formData.budget} onSelect={(value) => select('budget', value)} />
                       <OptionGroup label="Zeitraum" options={timelineOptions} value={formData.timeline} onSelect={(value) => select('timeline', value)} />
                       <label className="config-label"><Link2 size={17} /> Inspirations-Websites</label>
-                      <textarea className="config-input" name="inspirationWebsites" value={formData.inspirationWebsites} onChange={change} rows="3" placeholder="Links zu Websites, Marken oder Stilen" />
+                      <textarea className="config-input" name="inspirationWebsites" value={formData.inspirationWebsites} onChange={change} rows="3" placeholder="Links zu Websites, Beispielseiten, Marken oder Stilen" />
                     </>
                   )}
 
@@ -290,7 +265,8 @@ function Configurator({ onClose }) {
                         <input className="config-input" type="email" name="email" value={formData.email} onChange={change} required placeholder="E-Mail-Adresse *" />
                         <input className="config-input" type="tel" name="phone" value={formData.phone} onChange={change} required placeholder="Telefonnummer *" />
                         <label className="config-label"><MessageCircle size={17} /> Notizen</label>
-                        <textarea className="config-input" name="notes" value={formData.notes} onChange={change} rows="5" placeholder="Wünsche, vorhandene Website oder besondere Anforderungen" />
+                        <p className="config-help">Hier können Sie Website-Inspirationen, Beispielseiten, Links, Ideen oder besondere Wünsche einfügen. Bilder, Videos oder größere Dateien können Sie uns gerne anschließend per WhatsApp zusenden.</p>
+                        <textarea className="config-input" name="notes" value={formData.notes} onChange={change} rows="5" placeholder="Kurzbeschreibung, Ziele, Links, Ideen oder besondere Anforderungen" />
                       </form>
                     </>
                   )}
@@ -299,18 +275,17 @@ function Configurator({ onClose }) {
                     <>
                       <span className="config-kicker">Schritt 4 von 4</span>
                       <h2>Anfrage prüfen</h2>
-                      <p className="config-intro">Passt alles? Dateien senden Sie anschließend bequem per WhatsApp.</p>
+                      <p className="config-intro">Passt alles? Wir prüfen Ihre Anfrage individuell und melden uns mit einem passenden persönlichen Angebot.</p>
                       <div className="config-summary">
                         {[
-                          ['Projektarten', getLabels(projectOptions, formData.projectTypes)],
-                          ['Schildart', getLabel(signOptions, formData.signType, 'Nicht ausgewählt')],
-                          ['Website-Paket', getLabel(packageOptions, formData.websitePackage, 'Nicht ausgewählt')],
-                          ['Budgetrahmen', getLabel(budgetOptions, formData.budget)],
+                          ['Hauptbereich', getLabel(projectOptions, formData.projectType)],
+                          ['Budgetorientierung', getLabel(budgetOptions, formData.budget)],
                           ['Zeitraum', getLabel(timelineOptions, formData.timeline)],
+                          ['Angebot', 'Individuelles Angebot nach Anfrage'],
                           ['Kontakt', `${formData.name}${formData.company ? `, ${formData.company}` : ''}`],
                         ].map(([label, value]) => <div key={label}><small>{label}</small><strong>{value}</strong></div>)}
                       </div>
-                      <div className="config-whatsapp-note"><Bot size={22} /><p><strong>Keine Uploads nötig.</strong><br />Fotos, Logos, Videos und Inspirationen können Sie nach dem Absenden per WhatsApp teilen.</p></div>
+                      <div className="config-whatsapp-note"><Bot size={22} /><p><strong>Individuelles Angebot nach Anfrage.</strong><br />Bilder, Videos, Logos oder größere Dateien können Sie uns nach dem Absenden gerne per WhatsApp zusenden.</p></div>
                     </>
                   )}
 

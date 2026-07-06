@@ -11,16 +11,20 @@ const rateLimitStore = new Map();
 
 const labels = {
   projectTypes: {
-    website: 'Website erstellen',
-    relaunch: 'Website Relaunch',
-    shop: 'Onlineshop',
-    seo: 'SEO / SEA / GEO',
-    branding: 'Logo & Branding',
+    website: 'Webseiten & Landingpages',
+    business_app_shop: 'Business-Apps & Onlineshops',
+    digital_marketing: 'Digitales Marketing',
+    ai_automation: 'KI-Automatisierung',
+    signage: 'Firmen- & Fassadenschilder',
+    relaunch: 'Webseiten & Landingpages',
+    shop: 'Business-Apps & Onlineshops',
+    seo: 'Digitales Marketing',
+    branding: 'Digitales Marketing',
     marketing: 'Digitales Marketing',
     'ai-automation': 'KI-Automatisierung',
-    'ai-assistant': 'Chatbot & KI-Assistent',
-    software: 'Software & APIs',
-    retainer: 'Retainer & Wartung',
+    'ai-assistant': 'KI-Automatisierung',
+    software: 'Business-Apps & Onlineshops',
+    retainer: 'Business-Apps & Onlineshops',
   },
   signType: {
     led: 'LED-Schrift & Leuchtreklame',
@@ -35,10 +39,14 @@ const labels = {
     unsure: 'Noch offen',
   },
   budget: {
-    'under-3000': 'Bis 3.000 EUR',
-    '3000-7000': '3.000 - 7.000 EUR',
-    '7000-15000': '7.000 - 15.000 EUR',
-    '15000-plus': 'Über 15.000 EUR',
+    compact: 'Kompakter Einstieg',
+    professional: 'Professionelles Projekt',
+    growth: 'Wachstum & Skalierung',
+    custom: 'Individuelle Lösung',
+    'under-3000': 'Kompakter Einstieg',
+    '3000-7000': 'Professionelles Projekt',
+    '7000-15000': 'Wachstum & Skalierung',
+    '15000-plus': 'Individuelle Lösung',
     unsure: 'Noch offen',
   },
   timeline: {
@@ -54,13 +62,14 @@ const fieldLabels = {
   email: 'E-Mail',
   phone: 'Telefon',
   company: 'Firma',
-  projectTypes: 'Projektarten',
-  signType: 'Physische Sichtbarkeit',
-  websitePackage: 'Website-Paket',
-  budget: 'Budgetrahmen',
+  projectTypes: 'Hauptbereich',
+  signType: 'Detail Beschilderung',
+  websitePackage: 'Detail Website / Shop',
+  budget: 'Budgetorientierung',
   timeline: 'Zeitraum',
   inspirationWebsites: 'Inspirations-Websites',
   notes: 'Nachricht / Zusatzwünsche',
+  offer: 'Angebot',
 };
 
 function limitLength(value, maxLength) {
@@ -147,7 +156,7 @@ function humanizeChoice(group, value) {
 function humanizeChoices(group, values) {
   const normalizedValues = normalizeArray(values);
   if (!normalizedValues.length) return 'Nicht angegeben';
-  return normalizedValues.map((value) => humanizeChoice(group, value)).join(', ');
+  return [...new Set(normalizedValues.map((value) => humanizeChoice(group, value)))].join(', ');
 }
 
 function escapeHtml(value) {
@@ -160,12 +169,16 @@ function escapeHtml(value) {
 }
 
 function normalizeInquiry(payload = {}) {
+  const projectTypes = normalizeArray(payload.projectTypes);
+  const projectType = normalizeString(payload.projectType, 80) || projectTypes[0] || '';
+
   return {
     name: normalizeString(payload.name, 120),
     email: normalizeString(payload.email, 254).toLowerCase(),
     phone: normalizeString(payload.phone, 80),
     company: normalizeString(payload.company, 160),
-    projectTypes: normalizeArray(payload.projectTypes),
+    projectType,
+    projectTypes: projectTypes.length ? projectTypes : (projectType ? [projectType] : []),
     signType: normalizeString(payload.signType, 80),
     websitePackage: normalizeString(payload.websitePackage, 80),
     budget: normalizeString(payload.budget, 80),
@@ -186,7 +199,7 @@ function validateInquiry(inquiry) {
   if (!inquiry.name) return 'Bitte geben Sie Ihren Namen ein.';
   if (!inquiry.email || !isValidEmail(inquiry.email)) return 'Bitte geben Sie eine gültige E-Mail-Adresse ein.';
   if (!inquiry.phone) return 'Bitte geben Sie eine Telefonnummer ein.';
-  if (!inquiry.projectTypes.length) return 'Bitte wählen Sie mindestens eine Projektart aus.';
+  if (!inquiry.projectTypes.length) return 'Bitte wählen Sie einen Hauptbereich aus.';
   return '';
 }
 
@@ -195,6 +208,16 @@ function formatLine(label, value) {
 }
 
 function formatTextEmail(inquiry) {
+  const selectionLines = [
+    formatLine(fieldLabels.projectTypes, humanizeChoices('projectTypes', inquiry.projectTypes)),
+    inquiry.signType ? formatLine(fieldLabels.signType, humanizeChoice('signType', inquiry.signType)) : '',
+    inquiry.websitePackage ? formatLine(fieldLabels.websitePackage, humanizeChoice('websitePackage', inquiry.websitePackage)) : '',
+    formatLine(fieldLabels.budget, humanizeChoice('budget', inquiry.budget)),
+    formatLine(fieldLabels.timeline, humanizeChoice('timeline', inquiry.timeline)),
+    formatLine(fieldLabels.inspirationWebsites, inquiry.inspirationWebsites),
+    formatLine(fieldLabels.offer, 'Individuelles Angebot nach Anfrage'),
+  ].filter(Boolean);
+
   return [
     `Neue Anfrage über ${siteName}`,
     '',
@@ -205,12 +228,7 @@ function formatTextEmail(inquiry) {
     formatLine(fieldLabels.company, inquiry.company),
     '',
     'Konfigurator-Auswahl:',
-    formatLine(fieldLabels.projectTypes, humanizeChoices('projectTypes', inquiry.projectTypes)),
-    formatLine(fieldLabels.signType, humanizeChoice('signType', inquiry.signType)),
-    formatLine(fieldLabels.websitePackage, humanizeChoice('websitePackage', inquiry.websitePackage)),
-    formatLine(fieldLabels.budget, humanizeChoice('budget', inquiry.budget)),
-    formatLine(fieldLabels.timeline, humanizeChoice('timeline', inquiry.timeline)),
-    formatLine(fieldLabels.inspirationWebsites, inquiry.inspirationWebsites),
+    ...selectionLines,
     '',
     'Nachricht / Zusatzwünsche:',
     inquiry.notes || 'Nicht angegeben',
@@ -240,11 +258,12 @@ function formatHtmlEmail(inquiry) {
   ];
   const selectionRows = [
     [fieldLabels.projectTypes, humanizeChoices('projectTypes', inquiry.projectTypes)],
-    [fieldLabels.signType, humanizeChoice('signType', inquiry.signType)],
-    [fieldLabels.websitePackage, humanizeChoice('websitePackage', inquiry.websitePackage)],
+    ...(inquiry.signType ? [[fieldLabels.signType, humanizeChoice('signType', inquiry.signType)]] : []),
+    ...(inquiry.websitePackage ? [[fieldLabels.websitePackage, humanizeChoice('websitePackage', inquiry.websitePackage)]] : []),
     [fieldLabels.budget, humanizeChoice('budget', inquiry.budget)],
     [fieldLabels.timeline, humanizeChoice('timeline', inquiry.timeline)],
     [fieldLabels.inspirationWebsites, inquiry.inspirationWebsites],
+    [fieldLabels.offer, 'Individuelles Angebot nach Anfrage'],
   ];
 
   return `
