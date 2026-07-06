@@ -26,14 +26,6 @@ const projectOptions = [
   { id: 'signage', title: 'Firmen- & Fassadenschilder', desc: 'Firmenschilder, Fassadenschilder, Leuchtreklame und Außenwerbung.', icon: Monitor },
 ];
 
-const budgetOptions = [
-  { id: 'compact', title: 'Kompakter Einstieg', desc: 'Schlanker Umfang mit klar priorisierten Zielen' },
-  { id: 'professional', title: 'Professionelles Projekt', desc: 'Solider Ausbau mit Strategie, Design und Umsetzung' },
-  { id: 'growth', title: 'Wachstum & Skalierung', desc: 'Mehrere Bausteine oder laufende Weiterentwicklung' },
-  { id: 'custom', title: 'Individuelle Lösung', desc: 'Komplexere Anforderungen oder besondere Funktionen' },
-  { id: 'unsure', title: 'Noch offen', desc: 'Wir ordnen den passenden Rahmen gemeinsam ein' },
-];
-
 const timelineOptions = [
   { id: 'asap', title: 'So bald wie möglich', desc: 'Schneller Projektstart' },
   { id: '2-4-weeks', title: 'In 2 - 4 Wochen', desc: 'Start ist konkret geplant' },
@@ -94,7 +86,6 @@ function Configurator({ onClose }) {
     projectTypes: [],
     signType: '',
     websitePackage: '',
-    budget: '',
     timeline: '',
     inspirationWebsites: '',
     name: '',
@@ -202,7 +193,7 @@ function Configurator({ onClose }) {
                 <h2>Projekt starten</h2>
               </div>
               <ol className="config-progress">
-                {['Projekt', 'Rahmen', 'Kontakt', 'Prüfen'].map((label, index) => {
+                {['Projekt', 'Details', 'Kontakt', 'Prüfen'].map((label, index) => {
                   const number = index + 1;
                   return (
                     <li className={step >= number ? 'is-active' : ''} key={label}>
@@ -233,9 +224,8 @@ function Configurator({ onClose }) {
                   {step === 2 && (
                     <>
                       <span className="config-kicker">Schritt 2 von 4</span>
-                      <h2>Budget, Zeitraum & Inspiration</h2>
-                      <p className="config-intro">Beschreiben Sie kurz Ihr Vorhaben. Wir prüfen die Anfrage individuell und erstellen danach ein persönliches Angebot.</p>
-                      <OptionGroup label="Budgetorientierung" options={budgetOptions} value={formData.budget} onSelect={(value) => select('budget', value)} />
+                      <h2>Zeitraum & Inspiration</h2>
+                      <p className="config-intro">Teilen Sie uns mit, wann Sie starten möchten und welche Inspirationen oder Beispielseiten zu Ihrem Vorhaben passen.</p>
                       <OptionGroup label="Zeitraum" options={timelineOptions} value={formData.timeline} onSelect={(value) => select('timeline', value)} />
                       <label className="config-label"><Link2 size={17} /> Inspirations-Websites</label>
                       <textarea className="config-input" name="inspirationWebsites" value={formData.inspirationWebsites} onChange={change} rows="3" placeholder="Links zu Websites, Beispielseiten, Marken oder Stilen" />
@@ -279,7 +269,6 @@ function Configurator({ onClose }) {
                       <div className="config-summary">
                         {[
                           ['Hauptbereich', getLabel(projectOptions, formData.projectType)],
-                          ['Budgetorientierung', getLabel(budgetOptions, formData.budget)],
                           ['Zeitraum', getLabel(timelineOptions, formData.timeline)],
                           ['Angebot', 'Individuelles Angebot nach Anfrage'],
                           ['Kontakt', `${formData.name}${formData.company ? `, ${formData.company}` : ''}`],
